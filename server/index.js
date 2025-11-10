@@ -2,10 +2,22 @@ import 'dotenv/config'
 import express from 'express'
 import fetch from 'node-fetch'
 import cors from 'cors'
+import { withCookies, getUserFromSession } from './middleware/auth.js'
+import authRoutes from './routes/auth.js'
+import forumsRoutes from './routes/forums.js'
+import adminRoutes from './routes/admin.js'
 
 const app = express()
-app.use(cors())
+
+// CORS - allow credentials from localhost:5173
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+}))
+
 app.use(express.json({ limit: '1mb' }))
+app.use(withCookies)
+app.use(getUserFromSession)
 
 const PORT = process.env.PORT || 8787
 const SGG_URL = 'https://api.start.gg/gql/alpha'
@@ -57,6 +69,18 @@ const handleError = (res, err) => {
     ...(err?.errors ? { errors: err.errors } : {}),
   })
 }
+
+// Mount API routes
+app.use('/api/auth', authRoutes)
+app.use('/api/forums', forumsRoutes)
+app.use('/api/admin', adminRoutes)
+
+// Health check
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, services: ['startgg', 'forums', 'auth'] })
+})
+
+// Start.gg proxy routes (keep existing)
 
 app.get('/api/sgg/health', (_req, res) => {
   res.json({ ok: true, tokenLoaded: !!process.env.STARTGG_TOKEN })

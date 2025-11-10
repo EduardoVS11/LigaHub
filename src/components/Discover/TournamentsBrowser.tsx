@@ -12,18 +12,17 @@ import {
   VideogameRef,
 } from '../../api/startgg'
 
-const DEFAULT_GAMES = ['League of Legends', 'Counter-Strike 2', 'Dota 2']
+const DEFAULT_GAMES = ['Super Smash Bros. Ultimate', 'Street Fighter 6', 'Rocket League']
 const POPULAR_GAMES = [
   ...DEFAULT_GAMES,
   'Valorant',
-  'Street Fighter 6',
-  'Rocket League',
   'Fortnite',
   'Overwatch 2',
   'Mortal Kombat 1',
   'Tekken 8',
-  'Super Smash Bros. Ultimate',
   'Rainbow Six Siege',
+  'Guilty Gear Strive',
+  'The King of Fighters XV',
 ]
 const MIN_SEARCH_LENGTH = 3
 

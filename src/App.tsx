@@ -7,25 +7,21 @@ import Badge from './components/Badge'
 import Lightbox from './components/Lightbox'
 import Pagination from './components/Pagination'
 import NewPost from './components/NewPost'
-import NewThread from './components/NewThread'
-import ReplyBox from './components/ReplyBox'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { categories as seedCategories, seedPosts, seedThreads } from './data/seed'
-import type { Thread } from './data/types'
-import { filterPostsBySearch, filterThreadsBySearchAndCategory, paginate } from './utils/filters'
+import { seedPosts } from './data/seed'
+import { filterPostsBySearch, paginate } from './utils/filters'
+import ForumsView from './components/Forums/ForumsView'
 
 const LazyUserMenu = React.lazy(() => import('./components/UserMenu'))
 const LazyTournamentsBrowser = React.lazy(() => import('./components/Discover/TournamentsBrowser'))
 
-  const LOGO_URL = '/ligahub-logo.png'
+const LOGO_URL = '/ligahub-logo.png'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'feed'|'leagues'|'teams'|'calendar'|'forums'|'profile'>('feed')
   const [search, setSearch] = useState('')
   const [compact, setCompact] = useState(true)
   const [forumSort, setForumSort] = useState<'hot'|'new'|'top'>('hot')
-  const [activeCategory, setActiveCategory] = useState('general')
-  const [activeThreadId, setActiveThreadId] = useState<string|null>(null)
   const [lightboxUrl, setLightboxUrl] = useState('')
   const [showHelp, setShowHelp] = useState(false)
 
@@ -38,41 +34,15 @@ export default function App() {
   })
 
   const [posts, setPosts] = useState(seedPosts)
-  const [threads, setThreads] = useState(seedThreads)
-
-  const activeThread: Thread | null = useMemo(() => threads.find(t => t.id === activeThreadId) || null, [threads, activeThreadId])
 
   function addPost(text: string) {
     if (!text.trim()) return
     setPosts([{ id: `p${Date.now()}`, author: 'Você', avatar: 'VC', body: text.trim(), image: null, likes: 0, comments: 0, createdAt: new Date().toISOString() }, ...posts])
   }
-  function addThread(title: string, category: string) {
-    if (!title.trim()) return
-    const t: Thread = { id: `t${Date.now()}`, category, title: title.trim(), author: 'Você', createdAt: Date.now(), posts: [{ id: `tp${Date.now()}`, author: 'Você', body: 'Thread criada!', createdAt: Date.now() }], up:0, down:0, pinned:false }
-    setThreads([t, ...threads])
-    setActiveThreadId(t.id)
-  }
-  function addReply(threadId: string, body: string) {
-    if (!body.trim()) return
-    setThreads(prev => prev.map(t => t.id !== threadId ? t : { ...t, posts: [...t.posts, { id: `tp${Date.now()}`, author: 'Você', body: body.trim(), createdAt: Date.now() }] }))
-  }
 
   const filteredPosts = useMemo(() => filterPostsBySearch(posts, search), [posts, search])
-  const filteredThreadsRaw = useMemo(() => filterThreadsBySearchAndCategory(threads, activeCategory, search), [threads, activeCategory, search])
-
-  const sortedThreads = useMemo(() => {
-    const arr = [...filteredThreadsRaw]
-    if (forumSort === 'new') arr.sort((a,b) => b.createdAt - a.createdAt)
-    else if (forumSort === 'top') arr.sort((a,b) => (b.up - b.down) - (a.up - a.down))
-    else arr.sort((a,b) => (b.up - b.down) + (b.createdAt - a.createdAt) * 1e-6)
-    return arr
-  }, [filteredThreadsRaw, forumSort])
 
   const [page, setPage] = useState(1)
-  const pageSize = 6
-  const pagedThreads = useMemo(() => paginate(sortedThreads, page, pageSize), [sortedThreads, page])
-
-  React.useEffect(()=>{ setPage(1) }, [sortedThreads.length, activeCategory, forumSort])
 
   return (
     <div className={`min-h-screen bg-neutral-100 text-neutral-900 ${compact ? 'text-[14px]' : 'text-base'}`}>
@@ -150,51 +120,7 @@ export default function App() {
           )}
 
           {activeTab === 'forums' && (
-            <>
-              <Panel>
-                <div className="p-3">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    {seedCategories.map(c => (
-                      <button key={c.id} onClick={()=>{ setActiveCategory(c.id); setActiveThreadId(null) }} className={`rounded border px-2 py-1 text-xs ${activeCategory===c.id ? 'bg-white text-neutral-900 border-neutral-400' : 'bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-200'}`}>{c.label}</button>
-                    ))}
-                  </div>
-                  <NewThread onSubmit={(title)=>addThread(title, activeCategory)} />
-                </div>
-              </Panel>
-              <Panel>
-                <div className="p-3">
-                  <div className="mb-2 text-sm font-semibold">Threads</div>
-                  <Separator />
-                  <ul className="divide-y divide-neutral-300 text-sm">
-                    {pagedThreads.map(t => (
-                      <li key={t.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 py-2 odd:bg-neutral-50">
-                        <button className="truncate text-left hover:underline" onClick={()=>setActiveThreadId(t.id)}>{t.title}</button>
-                        <span className="text-neutral-600">by {t.author} • {new Date(t.createdAt).toLocaleString()}</span>
-                        <span className="text-neutral-600">{t.posts.length} replies</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Pagination page={page} total={sortedThreads.length} pageSize={pageSize} onPage={setPage} />
-                </div>
-              </Panel>
-              {activeThread && (
-                <Panel>
-                  <div className="p-3">
-                    <div className="mb-2 text-sm font-semibold">{activeThread.title}</div>
-                    <Separator />
-                    <div className="space-y-3 py-2">
-                      {activeThread.posts.map(p => (
-                        <div key={p.id} className="rounded border border-neutral-300 bg-neutral-50 p-2">
-                          <div className="mb-1 text-xs text-neutral-600">{p.author} • {new Date(p.createdAt).toLocaleString()}</div>
-                          <p className="text-sm leading-6 text-neutral-900">{p.body}</p>
-                        </div>
-                      ))}
-                      <ReplyBox onSubmit={(body)=>addReply(activeThread.id, body)} />
-                    </div>
-                  </div>
-                </Panel>
-              )}
-            </>
+            <ForumsView forumSort={forumSort} />
           )}
 
           {activeTab === 'leagues' && (
