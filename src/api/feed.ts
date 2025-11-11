@@ -19,7 +19,12 @@ export interface FeedPost {
 }
 
 export const FeedAPI = {
-  list: () => api<FeedPost[]>('/api/feed'),
+  list: (params?: { authorId?: string }) => {
+    const q = new URLSearchParams()
+    if (params?.authorId) q.set('authorId', params.authorId)
+    const url = q.toString() ? `/api/feed?${q.toString()}` : '/api/feed'
+    return api<FeedPost[]>(url)
+  },
 
   /**
    * Create a new feed post. Optionally include imageBase64 (no data URL prefix) and image metadata.

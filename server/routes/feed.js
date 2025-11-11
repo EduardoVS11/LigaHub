@@ -7,7 +7,10 @@ const router = express.Router()
 // List feed posts (most recent first)
 router.get('/', async (req, res) => {
   try {
+    const { authorId } = req.query || {}
+    const where = authorId ? { authorId: String(authorId) } : {}
     const posts = await db.feedPost.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: { author: { select: { id: true, username: true, avatarUrl: true, role: true } } },
       take: 50,

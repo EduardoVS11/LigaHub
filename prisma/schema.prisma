@@ -92,6 +92,7 @@ model ForumVote {
 
 enum Role {
   USER
+  ORGANIZER
   MOD
   ADMIN
 }

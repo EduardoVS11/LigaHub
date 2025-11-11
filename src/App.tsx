@@ -17,6 +17,7 @@ import ForumsView from './components/Forums/ForumsView'
 const LazyUserMenu = React.lazy(() => import('./components/UserMenu'))
 const LazyTournamentsBrowser = React.lazy(() => import('./components/Discover/TournamentsBrowser'))
 const LazyCalendarView = React.lazy(() => import('./components/Calendar/CalendarView'))
+const LazyProfileView = React.lazy(() => import('./components/ProfileView'))
 
 const LOGO_URL = '/ligahub-logo.png'
 
@@ -44,16 +45,21 @@ export default function App() {
     FeedAPI.list()
       .then((data) => {
         if (!mounted) return
-        const mapped = data.map((p) => ({
-          id: p.id,
-          author: p.author?.username || 'Unknown',
-          avatar: (p.author?.username || 'U').split(' ').map(s=>s[0]).slice(0,2).join('') || 'U',
-          body: p.body,
-          image: p.imageBase64 ? `data:${p.imageMime};base64,${p.imageBase64}` : null,
-          likes: 0,
-          comments: 0,
-          createdAt: new Date(p.createdAt).toISOString(),
-        }))
+        const mapped = data.map((p) => {
+          const initials = (p.author?.username || 'U').split(' ').map(s=>s[0]).slice(0,2).join('') || 'U'
+          return {
+            id: p.id,
+            author: p.author?.username || 'Unknown',
+            avatar: initials,
+            avatarUrl: p.author?.avatarUrl || null,
+            avatarInitials: initials,
+            body: p.body,
+            image: p.imageBase64 ? `data:${p.imageMime};base64,${p.imageBase64}` : null,
+            likes: 0,
+            comments: 0,
+            createdAt: new Date(p.createdAt).toISOString(),
+          }
+        })
         setPosts(mapped)
       })
       .catch((err)=>{
@@ -68,10 +74,13 @@ export default function App() {
 
     try {
       const created = await FeedAPI.create({ body: text, imageBase64: imageBase64 || null, imageMime: imageMime || null, imageFilename: imageFilename || null })
+      const initials = (created.author?.username || 'VC').split(' ').map(s=>s[0]).slice(0,2).join('') || 'VC'
       const mapped = {
         id: created.id,
         author: created.author?.username || 'Você',
-        avatar: (created.author?.username || 'VC').split(' ').map(s=>s[0]).slice(0,2).join('') || 'VC',
+        avatar: initials,
+        avatarUrl: created.author?.avatarUrl || null,
+        avatarInitials: initials,
         body: created.body,
         image: created.imageBase64 ? `data:${created.imageMime};base64,${created.imageBase64}` : null,
         likes: 0,
@@ -144,7 +153,13 @@ export default function App() {
               {filteredPosts.map(p => (
                 <Panel key={p.id}>
                   <div className="flex items-start gap-3 p-3">
-                    <div className="grid h-10 w-10 place-items-center rounded border border-neutral-400 bg-neutral-100 text-xs font-bold text-neutral-700">{p.avatar}</div>
+                    <div className="h-10 w-10 rounded overflow-hidden border border-neutral-400 bg-neutral-100 text-xs font-bold text-neutral-700">
+                      {p.avatarUrl ? (
+                        <img src={p.avatarUrl} alt={p.author} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center">{p.avatar}</div>
+                      )}
+                    </div>
                     <div className="flex-1">
                       <div className="mb-1 flex items-center gap-2 text-xs text-neutral-600">
                         <span className="font-medium text-neutral-800">{p.author}</span>
@@ -189,6 +204,13 @@ export default function App() {
             <div className="lg:col-span-8">
               <React.Suspense fallback={<div className="p-3">Loading calendar…</div>}>
                 <LazyCalendarView />
+              </React.Suspense>
+            </div>
+          )}
+          {activeTab === 'profile' && (
+            <div className="lg:col-span-8">
+              <React.Suspense fallback={<div className="p-3">Loading profile…</div>}>
+                <LazyProfileView />
               </React.Suspense>
             </div>
           )}

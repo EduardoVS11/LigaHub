@@ -15,6 +15,7 @@ export default function RegisterPanel({ onClose, onSwitchToLogin, onSuccess }: R
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [isOrganizer, setIsOrganizer] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -36,7 +37,7 @@ export default function RegisterPanel({ onClose, onSwitchToLogin, onSuccess }: R
     setLoading(true)
 
     try {
-      await register(email, username, password)
+      await register(email, username, password, isOrganizer ? 'ORGANIZER' : 'USER')
       try { onSuccess && onSuccess() } catch (e) { /* ignore */ }
       onClose()
     } catch (err: any) {
@@ -109,6 +110,11 @@ export default function RegisterPanel({ onClose, onSwitchToLogin, onSuccess }: R
                   placeholder="••••••••"
                   required
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input id="organizer" type="checkbox" checked={isOrganizer} onChange={(e)=>setIsOrganizer(e.target.checked)} className="form-checkbox" />
+                <label htmlFor="organizer" className="text-sm">Create account as an organizer</label>
               </div>
 
               <div className="flex items-center justify-between pt-2">
